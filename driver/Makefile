@@ -4,7 +4,7 @@ KDIR = /lib/modules/$(shell uname -r)/build
 
 all:
 	rmmod led_matrix; \
-	make -C $(KDIR)  M=$(shell pwd) modules; \
+	make -C $(KDIR) SUBDIRS=$(PWD) M=$(shell pwd) modules; \
 	insmod led_matrix.ko
 
 
