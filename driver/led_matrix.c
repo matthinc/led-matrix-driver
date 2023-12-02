@@ -11,12 +11,12 @@
 #include <linux/err.h>
 #include <linux/types.h>
 
-#include "font.h"
-
 #define GPIO_LA 17
 #define GPIO_CLK 27
 #define GPIO_DI 22
 #define GPIO_EN 23
+
+#define BUFFER_SIZE 32
 
 #define RISING_EDGE(pin)        \
     do {                        \
@@ -75,15 +75,6 @@ static void release_gpio(int num)
     gpio_free(num);
 }
 
-static void load_character(char c, int sx, int sy)
-{
-  char *letter = font8x8_basic[(int)c];
-
-  for (int i = 0; i < 8; i++) {
-    led_buffer[sx + sy * 16 + i * 2] = letter[i];
-  }
-}
-
 static void display_buffer(void)
 {
   // Mapping of row positions in modules
@@ -111,20 +102,7 @@ static void display_buffer(void)
 
 static ssize_t write(struct file *filp, const char __user *buf, size_t len, loff_t *off)
 {
-  if (len <= 5) {
-    uint8_t rec_buf[4] = { 0, 0, 0, 0 };
-
-    // This is safe since copy_from_user zero-padds data
-    copy_from_user(rec_buf, buf, 4);
-
-    for (int y = 0; y < 2; y++) {
-      for (int x = 0; x < 2; x++) {
-        load_character(rec_buf[2 * y + x], x, y);
-      }
-    }
-  }
-
-  // Display received data
+  copy_from_user(led_buffer, buf, min(len, BUFFER_SIZE));
   display_buffer();
   
   return len;
@@ -148,7 +126,7 @@ static int __init matrix_init(void)
   
   struct device *device = device_create(dev_class, NULL, dev, NULL, "led_matrix");
 
-  led_buffer = devm_kzalloc(device, 32, GFP_KERNEL);
+  led_buffer = devm_kzalloc(device, BUFFER_SIZE, GFP_KERNEL);
 
   init_gpio(GPIO_LA, "Matrix_Latch");
   init_gpio(GPIO_CLK, "Matrix_Clock");
