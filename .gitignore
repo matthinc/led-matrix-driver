@@ -6,3 +6,4 @@
 **/*.mod.*
 **/*.o
 driver/test_userspace
+**/__pycache__/

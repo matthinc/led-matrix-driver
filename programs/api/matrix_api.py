@@ -1,4 +1,6 @@
 import math
+import time
+from PIL import Image, ImageFont, ImageDraw
 
 class LEDMatrix:
     def __init__(self):
@@ -31,6 +33,36 @@ class LEDMatrix:
         for yi, ll in enumerate(lines):
             for xi, l in enumerate(ll):
                 self.set_pixel(x + xi, y + yi, l == "1")
+
+    def show_image(self, im, xoff):
+        w, h = im.size
+        px = im.load()
+
+        for y in range(16):
+            for x in range(16):
+                actual_x = x + xoff
+
+                pixel = False
+                
+                if actual_x >= 0 and actual_x < w and y >= 0 and y < h:
+                    if px[actual_x, y][1] != 0:
+                        pixel = True
+
+                self.set_pixel(x, y, pixel)
+        self.show()
+
+    def draw_scrolling_text(self, text):
+        fnt = ImageFont.truetype("Hack-Regular.ttf", 14)
+        w = fnt.getsize(text)[0]
+
+        im = Image.new("RGB", (w, 16), (0, 0, 0))
+
+        draw = ImageDraw.Draw(im)
+        draw.text((0, 0), text, font=fnt, fill=(255, 255, 255))
+
+        for o in range(w):
+            self.show_image(im, o)
+            time.sleep(0.05)
 
     def number(self, x, y, num):
         self.digit(x, y, int(num / 10))
